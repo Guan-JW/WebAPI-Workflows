@@ -1,0 +1,101 @@
+{
+ "workload": "chat_with_pdf",
+ "name": "ChatWithPDF",
+ "source": "awesome-llm-apps advanced_llm_apps/chat_with_X_tutorials/chat_with_pdf at 6c16b23 (Apache-2.0), run unmodified",
+ "upstream": {
+  "repository": "https://github.com/Shubhamsaboo/awesome-llm-apps",
+  "commit": "6c16b23f1bacd0fdf240bb5141ef45e59e82c306",
+  "commit_date": "2026-10-21T16:23:38-07:00",
+  "license": "Apache-2.0",
+  "license_file_sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+  "source_modified": false,
+  "fetch": "fetch_upstream.sh (sparse, depth 1, into ./upstream)",
+  "path": "advanced_llm_apps/chat_with_X_tutorials/chat_with_pdf",
+  "last_commit_touching_file": "ea3fe6913b5a3f8178d2405f9f87f85947cc76c6 (2025-04-17)",
+  "files": {
+   "chat_pdf.py": "3f1d44bf1913dcc5620c37d64c556bfedbc02e7861e5757bdfd4cca6f2c61f84",
+   "requirements.txt": "8b5e74a86a87b3e753b7cf0ac0199cf39f29e097424491e35e8b9495a4a807b9"
+  },
+  "libraries": {
+   "embedchain": "0.1.128 (latest on PyPI; project archived 2026-05-22)",
+   "streamlit": "1.66.1",
+   "streamlit-chat": "0.1.1",
+   "chromadb": "0.5.23",
+   "openai": "1.109.1",
+   "langchain-openai": "0.2.14"
+  },
+  "first_retrieved": "2026-11-03"
+ },
+ "datasets": [
+  {
+   "name": "QASPER",
+   "id": "allenai/qasper",
+   "url": "https://huggingface.co/datasets/allenai/qasper",
+   "revision": "fdc9d8214fbab5dd782958601db4d678e6934a54",
+   "license": "CC BY 4.0",
+   "used": "document ids, question ids and question text",
+   "selection": "seeded sample, profiling from the validation split, test from the test split without rows 0-9 (manifests/chat_with_pdf/SELECTION.md)"
+  },
+  {
+   "name": "arXiv e-prints (PDF)",
+   "url": "https://arxiv.org/pdf/<arxiv_id>",
+   "license": "the arXiv license chosen by each article's authors (not recorded per file)",
+   "used": "unmodified PDFs, fetched by prepare_data.py and checked against the manifest sha256"
+  }
+ ],
+ "hosted_services": [
+  {
+   "provider": "OpenAI",
+   "endpoint": "POST /v1/embeddings",
+   "model": "text-embedding-ada-002",
+   "role": "embedchain OpenAIEmbedder default"
+  },
+  {
+   "provider": "OpenAI",
+   "endpoint": "POST /v1/chat/completions",
+   "model": "gpt-4o-mini",
+   "params": "temperature 0, max_tokens 1000 (embedchain defaults)"
+  }
+ ],
+ "stand_in_services": [],
+ "local_state": {
+  "vector_db": "Chroma, a new temporary directory per script run (app behavior)",
+  "metadata_db": "embedchain SQLite (chat history), one fresh file per document session"
+ },
+ "adaptations": [
+  {
+   "what": "headless driver: streamlit.testing.v1.AppTest runs the unmodified chat_pdf.py; key, upload and question go through the app's own widgets (FileUploader.set_value uses Streamlit's upload path)",
+   "why": "no browser"
+  },
+  {
+   "what": "API key typed into the app's key field from OPENAI_API_KEY",
+   "why": "no UI"
+  },
+  {
+   "what": "EC_TELEMETRY=False",
+   "why": "embedchain's documented opt-out of its PostHog analytics; not a workflow call"
+  },
+  {
+   "what": "EMBEDCHAIN_CONFIG_DIR = <client workdir>/ec_home",
+   "why": "keeps embedchain's config out of the home directory and separate per client"
+  },
+  {
+   "what": "EMBEDCHAIN_DB_URI = a fresh SQLite file per document session, set before each script run",
+   "why": "embedchain keeps chat history in one process-wide metadata DB; a fresh file is the app's first launch, so sessions do not see each other's history"
+  },
+  {
+   "what": "TMPDIR = <client workdir>/tmp; a session's temporary entries are deleted when it ends (untimed)",
+   "why": "the app's mkdtemp vector DBs and upload temp files stay in the client's directory; disk space"
+  },
+  {
+   "what": "chromadb SharedSystemClient.clear_system_cache() and gc after each session (untimed)",
+   "why": "the app opens a new Chroma client per rerun and never closes it"
+  }
+ ],
+ "development": {
+  "client": "Apple Silicon Mac",
+  "python": "CPython 3.11.18 (macOS arm64)",
+  "dependencies": "requirements.txt",
+  "measured": "2026-11-03 to 2026-11-09"
+ }
+}

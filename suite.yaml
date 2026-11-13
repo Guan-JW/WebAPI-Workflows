@@ -1,0 +1,64 @@
+# WebAPI-Workflows 0.1.0: workload index (details in workloads/<id>/README.md and source.json)
+suite: WebAPI-Workflows
+version: 0.1.0
+workloads:
+  - id: head_fashion
+    name: HeadFashion
+    domain: image editing
+    source: "derived from image editing; AUTOMATIC1111 WebUI + sd-webui-segment-anything"
+    services: [servers/a1111]
+    splits: {profiling: 9, test: 20, test2: 20}
+  - id: caption_compare
+    name: CaptionCompare
+    domain: image captioning
+    source: "derived from image captioning; AUTOMATIC1111 WebUI interrogate"
+    services: [servers/a1111]
+    splits: {profiling: 10, test: 20, test2: 20}
+  - id: image_blur
+    name: ImageBlur
+    domain: privacy
+    source: "derived from privacy-preserving photo sharing; AUTOMATIC1111 WebUI + sd-webui-segment-anything + sd-webui-blur"
+    services: [servers/a1111]
+    splits: {profiling: 10, test: 20, test2: 20}
+  - id: segment_ocr
+    name: SegmentOCR
+    domain: OCR
+    source: "derived from license-plate recognition; AUTOMATIC1111 WebUI + sd-webui-segment-anything + sd-webui-ocr"
+    services: [servers/a1111]
+    splits: {profiling: 10, test: 20, test2: 20}
+  - id: code_review
+    name: CodeReview
+    domain: developer tooling
+    source: "practice project on multi-service web APIs by an outside developer (adapted)"
+    services: [servers/code_review]
+    splits: {profiling: 35, test: 20, test2: 15}
+  - id: service_qa
+    name: ServiceQA
+    domain: question answering
+    source: "derived from self-hosted support assistants; five FastAPI services"
+    services: [servers/service_qa]
+    splits: {profiling: 60, test: 60, test2: 60}
+  - id: hybrid_search
+    name: HybridSearch
+    domain: question answering
+    source: "awesome-llm-apps rag_tutorials/hybrid_search_rag @ 6c16b23"
+    services: [hosted: OpenAI API, workloads/hybrid_search/rerank_standin.py]
+    splits: {profiling: 5, test: 25}
+  - id: chat_with_pdf
+    name: ChatWithPDF
+    domain: document chat
+    source: "awesome-llm-apps advanced_llm_apps/chat_with_X_tutorials/chat_with_pdf @ 6c16b23"
+    services: [hosted: OpenAI API]
+    splits: {profiling: 8, test: 37}
+  - id: audio_tour
+    name: AudioTour
+    domain: speech generation
+    source: "awesome-llm-apps voice_ai_agents/ai_audio_tour_agent @ 6c16b23"
+    services: [hosted: OpenAI API]
+    splits: {profiling: 5, test: 30}
+  - id: iopaint
+    name: IOPaint
+    domain: image editing
+    source: "Sanster/IOPaint 1.6.0 @ 61a759fb"
+    services: [servers/iopaint]
+    splits: {profiling: 5, test: 25}

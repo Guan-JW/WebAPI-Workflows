@@ -1,0 +1,4 @@
+# Client side of workloads/iopaint (the server has its own environment: servers/iopaint/setup.sh).
+# Versions of the client used in development (Python 3.11).
+requests==2.32.5
+Pillow==11.3.0

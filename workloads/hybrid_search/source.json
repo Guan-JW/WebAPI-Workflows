@@ -1,0 +1,127 @@
+{
+ "workload": "hybrid_search",
+ "name": "HybridSearch",
+ "source": "awesome-llm-apps rag_tutorials/hybrid_search_rag at 6c16b23 (Apache-2.0), run unmodified",
+ "upstream": {
+  "repository": "https://github.com/Shubhamsaboo/awesome-llm-apps",
+  "commit": "6c16b23f1bacd0fdf240bb5141ef45e59e82c306",
+  "commit_date": "2026-10-21T16:23:38-07:00",
+  "license": "Apache-2.0",
+  "license_file_sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+  "source_modified": false,
+  "fetch": "fetch_upstream.sh (sparse, depth 1, into ./upstream)",
+  "path": "rag_tutorials/hybrid_search_rag",
+  "files": {
+   "main.py": "e099e9fe654ddb82083a1b255d1ca11fd1fab7579657e41acf6da9bc5d430cc2",
+   "requirements.txt": "974958236e9eb98305d60463f74af5f9113c68990f0259dba8db6fe90bd4119f",
+   "README.md": "51bdb5ccb798e0f1b41714d01603b25792e368452ccd6c7149eb6877eae9aa60"
+  },
+  "libraries": {
+   "raglite": "0.2.1 (app pin)",
+   "rerankers": "0.6.0 (app pin)",
+   "pydantic": "2.10.1 (app pin)"
+  },
+  "first_retrieved": "2026-11-01"
+ },
+ "datasets": [
+  {
+   "name": "QASPER",
+   "id": "allenai/qasper",
+   "url": "https://huggingface.co/datasets/allenai/qasper",
+   "revision": "fdc9d8214fbab5dd782958601db4d678e6934a54",
+   "license": "CC BY 4.0",
+   "used": "document ids, question ids and question text",
+   "selection": "test split rows 0-9, all their questions (manifests/hybrid_search/SELECTION.md)"
+  },
+  {
+   "name": "arXiv e-prints (PDF)",
+   "url": "https://arxiv.org/pdf/<arxiv_id>",
+   "license": "the arXiv license chosen by each article's authors (not recorded per file)",
+   "used": "unmodified PDFs, fetched by prepare_data.py and checked against the manifest sha256"
+  }
+ ],
+ "hosted_services": [
+  {
+   "provider": "OpenAI",
+   "endpoint": "POST /v1/embeddings",
+   "model": "text-embedding-3-large",
+   "role": "app default"
+  },
+  {
+   "provider": "OpenAI",
+   "endpoint": "POST /v1/chat/completions",
+   "model": "gpt-4o-mini",
+   "stream": true,
+   "role": "replaces the app's claude-3-opus-20240229 (adaptation 1)"
+  }
+ ],
+ "stand_in_services": [
+  {
+   "name": "rerank stand-in",
+   "file": "rerank_standin.py",
+   "replaces": "Cohere POST https://api.cohere.ai/v1/rerank (model rerank-english-v3.0)",
+   "implementation": "Cohere v1 response format; scores with FlashRank ms-marco-MiniLM-L-12-v2 on CPU; fixed 175 ms delay per request",
+   "model": {
+    "name": "ms-marco-MiniLM-L-12-v2 (FlashRank)",
+    "url": "https://huggingface.co/prithivida/flashrank/resolve/main/ms-marco-MiniLM-L-12-v2.zip",
+    "onnx_sha256": "d3dd7b09fcf06b0c070081d6819b5effbb40b667bcad78b2d7543400271141d1"
+   },
+   "reason": "no Cohere API key during development"
+  }
+ ],
+ "local_state": {
+  "index": "raglite SQLite database built by build_index.py from the 10 PDFs (embeddings: OpenAI text-embedding-3-large); read-only at query time; one copy per client process"
+ },
+ "adaptations": [
+  {
+   "what": "answering LLM gpt-4o-mini instead of claude-3-opus-20240229",
+   "why": "the upstream model is retired and no Anthropic key was available"
+  },
+  {
+   "what": "rerank requests go to rerank_standin.py instead of api.cohere.ai; the app's own Cohere client is used, with its url attribute changed",
+   "why": "no Cohere key"
+  },
+  {
+   "what": "configuration built by the driver (app_setup.build_config) instead of the sidebar form; db_url is a SQLite file chosen by the driver",
+   "why": "headless run; SQLite is the UI default backend"
+  },
+  {
+   "what": "headless driver: main() L186-207 without Streamlit display calls; every question in a fresh chat (empty history)",
+   "why": "no browser; independent units"
+  },
+  {
+   "what": "fallback branch (Anthropic, L187-190) is not run; a unit that reaches it is an error",
+   "why": "no Anthropic key; never reached on this corpus during development"
+  },
+  {
+   "what": "index built by calling process_document on each PDF path, not through the upload widget's temp copy",
+   "why": "headless; the document id is a hash of the file bytes, so the stored data is the same apart from the filename"
+  },
+  {
+   "what": "LITELLM_LOCAL_MODEL_COST_MAP=True",
+   "why": "litellm 1.53.9 cannot parse today's online model map; raglite would then assume a 2048-token context and refuse to run"
+  },
+  {
+   "what": "TOKENIZERS_PARALLELISM=false",
+   "why": "silences the tokenizers fork warning; set in development"
+  },
+  {
+   "what": "stdout discarded during runs",
+   "why": "rerankers prints every rerank response; development runs discarded stdout too"
+  },
+  {
+   "what": "import serialized with a file lock",
+   "why": "importing raglite downloads two unused FlashRank models into ./.flashrank_cache; concurrent first imports race"
+  },
+  {
+   "what": "dependency pins added: litellm 1.53.9, numpy 1.26.4, llama-cpp-python 0.3.2",
+   "why": "litellm 1.15-1.52 are no longer on PyPI; spacy 3.7/thinc need numpy 1.x; the 0.3.35 metal wheel was malformed"
+  }
+ ],
+ "development": {
+  "client": "Apple Silicon Mac, 14 cores, 48 GB",
+  "python": "CPython 3.11.18 (macOS arm64)",
+  "dependencies": "requirements.txt",
+  "measured": "2026-11-01 to 2026-11-09"
+ }
+}

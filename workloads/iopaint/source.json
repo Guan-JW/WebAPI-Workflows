@@ -1,0 +1,106 @@
+{
+  "workload": "iopaint",
+  "name": "IOPaint object removal and upscale",
+  "source": "Sanster/IOPaint 1.6.0 at 61a759fb (Apache-2.0), server run unmodified",
+  "upstream": [
+    {
+      "name": "IOPaint",
+      "repo": "https://github.com/Sanster/IOPaint",
+      "commit": "61a759fb3f332bacdce8b2813f4837495c9b86e0",
+      "version": "1.6.0",
+      "commit_date": "2025-04-29",
+      "license": "Apache-2.0",
+      "used_as": "server, unmodified (servers/iopaint); its web client (web_app/src) is the source of the headless port workloads/iopaint/iopaint_web.py",
+      "client_files_ported": [
+        "web_app/src/lib/api.ts",
+        "web_app/src/lib/states.ts",
+        "web_app/src/lib/utils.ts",
+        "web_app/src/lib/const.ts",
+        "web_app/src/App.tsx",
+        "web_app/src/components/Workspace.tsx",
+        "web_app/src/components/Editor.tsx",
+        "web_app/src/components/Plugins.tsx",
+        "web_app/src/components/InteractiveSeg.tsx"
+      ]
+    }
+  ],
+  "services": [
+    {
+      "name": "iopaint",
+      "hosting": "self-hosted",
+      "setup": "servers/iopaint/setup.sh",
+      "start": "servers/iopaint/start.sh",
+      "command": "iopaint start --model lama --device cuda --output-dir DIR --quality 100 --enable-interactive-seg --interactive-seg-model sam2_1_tiny --interactive-seg-device cuda --enable-realesrgan --realesrgan-model realesr-general-x4v3 --realesrgan-device cuda",
+      "pre_start_setting": "IOPaint's vendored SAM 2 attention: OLD_GPU = MATH_KERNEL_ON = True (all scaled-dot-product-attention kernels allowed; needed on CUDA GPUs of compute capability >= 8.0)",
+      "python": "3.10",
+      "torch": "2.4.1 with CUDA 12.1 wheels in setup.sh; development server: torch 2.4.x cu121 (exact version not recorded)"
+    }
+  ],
+  "models": [
+    {
+      "role": "object removal (inpaint)",
+      "name": "LaMa (big-lama, TorchScript)",
+      "file": "big-lama.pt",
+      "url": "https://github.com/Sanster/models/releases/download/add_big_lama/big-lama.pt",
+      "md5": "e3aa4aaa15225a33ec84f9f4bc47e500",
+      "sha256": "344c77bbcb158f17dd143070d1e789f38a66c04202311ae3a258ef66667a9ea9",
+      "bytes": 205669692,
+      "upstream": "https://github.com/advimman/lama",
+      "license": "Apache-2.0"
+    },
+    {
+      "role": "interactive segmentation (click to mask)",
+      "name": "SAM 2.1 Hiera tiny",
+      "file": "sam2.1_hiera_tiny.pt",
+      "url": "https://dl.fbaipublicfiles.com/segment_anything_2/092824/sam2.1_hiera_tiny.pt",
+      "mirror": "https://huggingface.co/facebook/sam2.1-hiera-tiny/resolve/main/sam2.1_hiera_tiny.pt",
+      "md5": "6aa6761c9da74fbaa74b4c790a0a2007",
+      "sha256": "7402e0d864fa82708a20fbd15bc84245c2f26dff0eb43a4b5b93452deb34be69",
+      "bytes": 156008466,
+      "upstream": "https://github.com/facebookresearch/sam2",
+      "license": "Apache-2.0"
+    },
+    {
+      "role": "2x upscale (RealESRGAN plugin)",
+      "name": "Real-ESRGAN realesr-general-x4v3",
+      "file": "realesr-general-x4v3.pth",
+      "url": "https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.5.0/realesr-general-x4v3.pth",
+      "md5": "91a7644643c884ee00737db24e478156",
+      "sha256": "8dc7edb9ac80ccdc30c3a5dca6616509367f05fbc184ad95b731f05bece96292",
+      "bytes": 4885111,
+      "upstream": "https://github.com/xinntao/Real-ESRGAN",
+      "license": "BSD-3-Clause"
+    }
+  ],
+  "datasets": [
+    {
+      "name": "COCO 2017 val",
+      "homepage": "https://cocodataset.org",
+      "images": "http://images.cocodataset.org/val2017/",
+      "annotations": "http://images.cocodataset.org/annotations/annotations_trainval2017.zip (instances_val2017.json)",
+      "license": "annotations CC BY 4.0; each image under its Flickr license (manifest fields license, license_name, license_url)",
+      "selection": "manifests/iopaint/SELECTION.md",
+      "splits": {
+        "profiling": 5,
+        "test": 25
+      }
+    }
+  ],
+  "unit": "one web-UI session (11 HTTP requests)",
+  "outputs": {
+    "saved_image": "bytes sent to POST /api/v1/save_image, which the server writes unchanged"
+  },
+  "equivalence": "saved_image bytes identical (python -m wbench.compare)",
+  "adaptations": [
+    "The browser client is replaced by a headless Python port of IOPaint's web client (iopaint_web.py) that sends the editing path's API requests in order, with the same bodies.",
+    "The port does not load the static web UI, does not open the socket.io progress channel, and omits two page-load GETs whose responses no later request uses (/api/v1/inputimage and the Settings dialog's second /api/v1/server-config).",
+    "Two settings defaults differ from the browser's: negative_prompt is sent empty and controlnet_method as lllyasviel/control_v11p_sd15_canny (the browser sends a 283-character default negative prompt and an empty controlnet_method). LaMa uses neither field.",
+    "Browser canvases are modelled with Pillow; the mask PNG and multipart framing differ byte-wise from a browser's.",
+    "Server: placeholder iopaint/web_app/index.html, because the built web UI is not in the git tree and the server will not start without the directory.",
+    "Server: all SDPA kernels allowed in IOPaint's vendored SAM 2 (needed on CUDA compute capability >= 8.0; no effect on CPU)."
+  ],
+  "development_hardware": {
+    "server": "1x NVIDIA A100-SXM4-40GB, 16 CPU cores, 64 GB RAM, Linux, Python 3.10",
+    "client": "Apple Mac, Python 3.11, reaching the server over an SSH tunnel (RTT about 50 ms)"
+  }
+}

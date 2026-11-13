@@ -1,0 +1,2 @@
+# Client side (Python 3.10). Versions of the development client environment.
+requests==2.32.5

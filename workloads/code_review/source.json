@@ -1,0 +1,102 @@
+{
+  "workload": "code_review",
+  "name": "CodeReview",
+  "source": "A practice project on multi-service web APIs by an outside developer, included in adapted form",
+  "upstream": [
+    {
+      "name": "code review pipeline (four FastAPI services and a sequential client)",
+      "author": "an outside developer (practice project on multi-service web APIs)",
+      "commit_date": "2026-04-29",
+      "license": "no license file in the original repository",
+      "used_as": "adapted copy: services in servers/code_review, client in workloads/code_review/review_client.py",
+      "files_adapted": [
+        "server/code_review/_shared.py",
+        "server/code_review/parser_server.py",
+        "server/code_review/linter_server.py",
+        "server/code_review/scanner_server.py",
+        "server/code_review/summarizer_server.py",
+        "server/code_review/llm_backend.py (TemplateBackend only, moved into summarizer_server.py)",
+        "scripts/code_review/run_all_servers.sh",
+        "client/code_review/basic_client.py"
+      ]
+    }
+  ],
+  "services": [
+    {
+      "name": "parser",
+      "hosting": "self-hosted",
+      "port": 8101,
+      "start": "servers/code_review/start_services.sh",
+      "backed_by": "Python stdlib ast"
+    },
+    {
+      "name": "linter",
+      "hosting": "self-hosted",
+      "port": 8102,
+      "start": "servers/code_review/start_services.sh",
+      "backed_by": "ruff 0.15.12 (MIT), one process per request"
+    },
+    {
+      "name": "scanner",
+      "hosting": "self-hosted",
+      "port": 8103,
+      "start": "servers/code_review/start_services.sh",
+      "backed_by": "Bandit 1.9.4 (Apache-2.0), one process per request"
+    },
+    {
+      "name": "summarizer",
+      "hosting": "self-hosted",
+      "port": 8104,
+      "start": "servers/code_review/start_services.sh",
+      "backed_by": "deterministic template"
+    }
+  ],
+  "service_python": "3.10",
+  "service_requirements": "servers/code_review/requirements.txt",
+  "models": [],
+  "datasets": [
+    {
+      "name": "CPython 3.9.6 standard library modules",
+      "url": "https://www.python.org/ftp/python/3.9.6/Python-3.9.6.tgz",
+      "sha256": "d0a35182e19e416fc8eae25a3dcd4d02d4997333e4ad1f2eee6010aadc3fe866",
+      "extra_file": {
+        "file": "Lib/mailcap.py at CPython v3.9.16 (profiling split only)",
+        "url": "https://raw.githubusercontent.com/python/cpython/595f9ccb0c059f2fb5bf13643bfc0cdd5b55a422/Lib/mailcap.py",
+        "sha256": "b0ce7d29e8233ec412ac6aa16a9e62b3353d4acd44c6b870f6b6ffe1dbebba6f"
+      },
+      "license": "PSF-2.0",
+      "selection": "manifests/code_review/SELECTION.md",
+      "splits": {
+        "profiling": 35,
+        "test": 20,
+        "test2": 15
+      }
+    }
+  ],
+  "unit": "one Python source file (5 HTTP requests)",
+  "outputs": {
+    "review_json": "{action, review_text} of the /summarize response, JSON with sorted keys",
+    "action": "approve | request_changes",
+    "lint_summary": "lint counts and the first three diagnostics sent to /summarize",
+    "sec_summary": "highest severity and all security issues sent to /summarize"
+  },
+  "equivalence": "review_json identical (python -m wbench.compare --outputs review_json); action, lint_summary and sec_summary are expected identical as well",
+  "parameters": {
+    "lint_fields": "diagnostics,counts,full_report",
+    "scan_fields": "issues,severity_max,cwe_refs",
+    "http_timeout_s": 60
+  },
+  "adaptations": [
+    "Tracing removed: the services and the client no longer import the upstream profiling helper or write per-request trace records, and the services no longer print a log line per request.",
+    "Code paths the workflow does not use are removed: the parser's GET /ast/{id} endpoint and its in-memory AST store, the ast_id request field of /lint and /scan, the fields-based response trimming of /lint and /scan, the --parser-url option, and the summarizer's optional local-LLM backend.",
+    "The fields query parameter is still sent by the client, as in the original; the services return every field and ignore it.",
+    "ruff is started with --isolated so that configuration files above the service's working directory cannot change the rule set (on the 70 inputs the output is identical with and without the flag).",
+    "Scanner: the reference deployment ran a locally modified scanner (extra execution modes, not included) in the mode that runs the commit's code path, one Bandit process per request and no result cache, on a separate port; the released scanner is the commit's code on the upstream default port 8103.",
+    "Inputs come from a python.org tarball and one CPython git file instead of a local Python installation."
+  ],
+  "development_hardware": {
+    "server": "AMD EPYC 7763 node (the services are CPU only), RHEL 9.6, Python 3.10.22",
+    "client": "Apple Mac, Python 3.10.18, reaching the services over an SSH tunnel (ping RTT about 30 ms)",
+    "original_author": "Intel Core i9-13900F desktop, Ubuntu 22.04, Python 3.10.12"
+  }
+}

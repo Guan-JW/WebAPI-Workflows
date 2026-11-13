@@ -1,0 +1,93 @@
+{
+ "workload": "caption_compare",
+ "name": "CaptionCompare",
+ "source": "Derived from image captioning; built on the interrogate endpoint of AUTOMATIC1111 WebUI v1.10.1 (BLIP, CLIP)",
+ "workflow": "Three identical /sdapi/v1/interrogate requests (model clip) for one image.",
+ "upstream_code": [
+  {
+   "name": "AUTOMATIC1111 stable-diffusion-webui",
+   "repo": "https://github.com/AUTOMATIC1111/stable-diffusion-webui",
+   "commit": "82a973c04367123ae98bd9abdf80d9eda9b910e2",
+   "tag": "v1.10.1",
+   "license": "AGPL-3.0",
+   "modified": false,
+   "role": "API server (/sdapi/v1/*) and extension host"
+  }
+ ],
+ "server": "servers/a1111",
+ "server_patches": [],
+ "server_configuration": {
+  "env": {},
+  "config.json": {
+   "sam_use_local_groundingdino": true
+  },
+  "port_in_development": 7860,
+  "launch_flags": "--skip-prepare-environment --nowebui --api --server-name 127.0.0.1 --port 7860"
+ },
+ "models": [
+  {
+   "name": "BLIP base caption (capfilt large)",
+   "file": "models/BLIP/model_base_caption_capfilt_large.pth",
+   "url": "https://storage.googleapis.com/sfr-vision-language-research/BLIP/models/model_base_caption_capfilt_large.pth",
+   "sha256": "96ac8749bd0a568c274ebe302b3a3748ab9be614c737f3d8c529697139174086",
+   "bytes": 896081425,
+   "license": "BSD-3-Clause (salesforce/BLIP)"
+  },
+  {
+   "name": "CLIP ViT-L/14",
+   "file": "~/.cache/clip/ViT-L-14.pt",
+   "url": "https://openaipublic.azureedge.net/clip/models/b8cca3fd41ae0c99ba7e8951adf17d267cdb84cd88be6f7c2e0eca1737a03836/ViT-L-14.pt",
+   "sha256": "b8cca3fd41ae0c99ba7e8951adf17d267cdb84cd88be6f7c2e0eca1737a03836",
+   "bytes": 932768134,
+   "license": "MIT (openai/CLIP)"
+  },
+  {
+   "name": "clip-interrogator category lists (artists, flavors, mediums, movements)",
+   "file": "interrogate/*.txt",
+   "url": "https://raw.githubusercontent.com/pharmapsychotic/clip-interrogator/bc07ce62c179d3aab3053a623d96a071101d11cb/clip_interrogator/data/",
+   "sha256": {
+    "artists.txt": "01e4b30f6d7cfdb62f4582c5bec658e02d79bf9c19052949ce3336d6eff4d395",
+    "flavors.txt": "c99d83a7a435157339f3b60a34794c524de37159a9b72f3a2034df8245c4a2f1",
+    "mediums.txt": "91f26b9d0d7d93f8e30139a94f895ba5a97744033ec0b174539f3a88bc49cd2c",
+    "movements.txt": "16d60ecb48901885e877ca9243b3c32bc84a2477c4d3f0a1cf6d66086ce47483"
+   },
+   "license": "MIT"
+  }
+ ],
+ "datasets": [
+  {
+   "name": "COCO 2017 val",
+   "url": "https://cocodataset.org",
+   "images": "http://images.cocodataset.org/val2017/",
+   "annotations": {
+    "url": "http://images.cocodataset.org/annotations/annotations_trainval2017.zip",
+    "sha256": "113a836d90195ee1f884e704da6304dfaaecff1f023f49b6ca93c4aaae470268"
+   },
+   "license": "annotations CC BY 4.0 (COCO Consortium); images: per-image Flickr CC licenses (recorded per row) and the Flickr Terms of Use",
+   "selection": "manifests/caption_compare/SELECTION.md",
+   "seed": 20261031,
+   "rule": "all val2017 images",
+   "splits": {
+    "profiling": 10,
+    "test": 20,
+    "test2": 20
+   }
+  }
+ ],
+ "parameters": {
+  "model": "clip",
+  "repeat": 3
+ },
+ "adaptations": [
+  "input image taken from a manifest row instead of a fixed file path",
+  "request-ID headers and client-side request logging removed; request bodies unchanged"
+ ],
+ "client_requirements": "workloads/caption_compare/requirements.txt",
+ "development_hardware": {
+  "server_gpu": "NVIDIA A40 (46068 MiB visible), driver 595.71.05, torch 2.1.2+cu121",
+  "server_cpu": "AMD EPYC 7763",
+  "server_os": "RHEL 9.6",
+  "server_python": "3.10.22",
+  "client": "macOS laptop, Python 3.10.18, on a separate network over an SSH tunnel"
+ }
+}

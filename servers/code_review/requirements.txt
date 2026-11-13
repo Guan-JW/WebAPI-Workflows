@@ -1,0 +1,7 @@
+# Service-side dependencies of the code review services (Python 3.10).
+# Versions are the ones installed in the environment used for the reference runs.
+fastapi==0.136.1
+uvicorn==0.46.0
+pydantic==2.13.3
+ruff==0.15.12
+bandit==1.9.4

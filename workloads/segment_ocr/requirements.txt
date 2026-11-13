@@ -1,0 +1,5 @@
+# Client side (Python 3.10). Versions of the development client environment.
+# Pillow decodes/encodes the images the client sends and saves; another version can change request bytes.
+requests==2.32.5
+Pillow==12.1.0
+numpy==2.2.6

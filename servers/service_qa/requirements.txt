@@ -1,0 +1,14 @@
+# Service-side dependencies of the question-answering services (Python 3.10).
+# Versions are the ones installed in the environment used for the reference
+# runs (Linux x86_64, CUDA 13.0 build of torch; pick the torch wheel that
+# matches your CUDA driver).
+fastapi==0.162.0
+uvicorn[standard]==0.54.0
+pydantic==2.14.2
+numpy==2.2.6
+faiss-cpu==1.15.1
+rank-bm25==0.2.2
+sentence-transformers==6.2.0
+transformers==5.20.2
+torch==2.14.1
+accelerate==1.15.0

@@ -1,0 +1,100 @@
+{
+ "workload": "audio_tour",
+ "name": "AudioTour",
+ "source": "awesome-llm-apps voice_ai_agents/ai_audio_tour_agent at 6c16b23 (Apache-2.0), run unmodified",
+ "upstream": {
+  "repository": "https://github.com/Shubhamsaboo/awesome-llm-apps",
+  "commit": "6c16b23f1bacd0fdf240bb5141ef45e59e82c306",
+  "commit_date": "2026-10-21T16:23:38-07:00",
+  "license": "Apache-2.0",
+  "license_file_sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+  "source_modified": false,
+  "fetch": "fetch_upstream.sh (sparse, depth 1, into ./upstream)",
+  "path": "voice_ai_agents/ai_audio_tour_agent",
+  "app_dir_last_commit": "05d0d25cd6aa (2026-06-13)",
+  "files": {
+   "ai_audio_tour_agent.py": "12cb4026c537a324122b4761ed637460fd31fe16c2511890053ea9f6366ca3d5",
+   "manager.py": "75a43dbb23a0fba507100db15ae0e58c51a1625a39b744b86d7f9a14cba1617c",
+   "agent.py": "31aa8fba009757713e0bfb8eab0edce75fdb8b7659a60059cf76f0ef3765ca68",
+   "printer.py": "e58f32a96db2903e1347e007cd08a8b597f8b811d95968bd87eeb9809d9826f4",
+   "requirements.txt": "2faa93b919a1679cec93f647553db59822b0e36a3178cea2588ea5379e99534f",
+   "README.md": "14f33996a2d100aa2b5a750598c9db93de8f4097a669e32e8cb843534ca5c3c2"
+  },
+  "libraries": {
+   "openai": "1.68.2 (app pin)",
+   "openai-agents": "0.0.6 (app pin)",
+   "streamlit": "1.43.2 (app pin)"
+  },
+  "first_retrieved": "2026-11-03"
+ },
+ "datasets": [
+  {
+   "name": "UNESCO World Heritage List via Wikidata (P757)",
+   "url": "https://query.wikidata.org/sparql",
+   "license": "CC0 1.0 (Wikidata)",
+   "retrieved_utc": "2026-11-03T07:18Z",
+   "query_result_sha256": "2707a45a95d3a82034d8bb10b3222810add146c5f0eea33c0c681da22591ae93",
+   "used": "English site labels as the location text",
+   "selection": "manifests/audio_tour/SELECTION.md"
+  }
+ ],
+ "hosted_services": [
+  {
+   "provider": "OpenAI",
+   "endpoint": "POST /v1/responses",
+   "model": "gpt-4o",
+   "role": "planner (structured output)"
+  },
+  {
+   "provider": "OpenAI",
+   "endpoint": "POST /v1/responses",
+   "model": "gpt-4o-mini",
+   "role": "architecture and history research, hosted web_search_preview tool, tool_choice=required"
+  },
+  {
+   "provider": "OpenAI",
+   "endpoint": "POST /v1/responses",
+   "model": "gpt-4o-mini",
+   "role": "orchestrator (structured output)"
+  },
+  {
+   "provider": "OpenAI",
+   "endpoint": "POST /v1/audio/speech",
+   "model": "gpt-4o-mini-tts",
+   "params": "voice nova, MP3"
+  }
+ ],
+ "stand_in_services": [],
+ "adaptations": [
+  {
+   "what": "OPENAI_AGENTS_DISABLE_TRACING=1, set before agents is imported",
+   "why": "openai-agents 0.0.6 uploads traces to api.openai.com/v1/traces/ingest from a background thread; telemetry, not workflow calls (the SDK's documented switch)"
+  },
+  {
+   "what": "headless driver: ai_audio_tour_agent.py imported in Streamlit bare mode; run.py calls set_default_openai_key (L48), TourManager().run via run_async (L102-L105), tts (L114) and reads the audio file (L122); st.* display calls are not made",
+   "why": "no browser"
+  },
+  {
+   "what": "API key from OPENAI_API_KEY, passed to set_default_openai_key as L48 does; tts() reads the same variable",
+   "why": "no sidebar to type it into"
+  },
+  {
+   "what": "each client process imports its own byte-identical copy of the four app files",
+   "why": "the app writes speech_tour.mp3 next to its module; concurrent clients need separate output paths"
+  },
+  {
+   "what": "STREAMLIT_LOGGER_LEVEL=error",
+   "why": "silences Streamlit's bare-mode warnings"
+  },
+  {
+   "what": "input list from Wikidata (P757, CC0) instead of the UNESCO XML export",
+   "why": "whc.unesco.org/en/list/xml/ answered scripted downloads with a Cloudflare challenge (HTTP 403) on 2026-11-03"
+  }
+ ],
+ "development": {
+  "client": "Apple Silicon Mac",
+  "python": "CPython 3.11.18 (macOS arm64)",
+  "dependencies": "requirements.txt",
+  "measured": "2026-11-03 to 2026-11-09"
+ }
+}

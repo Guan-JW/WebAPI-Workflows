@@ -1,0 +1,38 @@
+Text detection and recognition parameters of sd-webui-ocr, as deployed for SegmentOCR.
+
+det_limit_side_len 960 -> 3200, det_db_thresh 0.3 -> 0.2, det_db_box_thresh 0.6 -> 0.2,
+det_db_unclip_ratio 1.5 -> 2.5, drop_score 0.5 -> 0.2, use_angle_cls False -> True.
+use_angle_cls has no effect on POST /ocr/predict (the predictor is called without the angle
+classifier step). The other values change which text regions are kept and therefore the OCR text.
+Base: SpenserCai/sd-webui-ocr @ 5c75383ce6f0389e7d3521c5481f5bdddea8e167
+
+--- a/scripts/ocr_base.py
++++ b/scripts/ocr_base.py
+@@ -15,12 +15,12 @@
+         'image_dir': None, 
+         'det_algorithm': 'DB', 
+         'det_model_dir': models_dir, 
+-        'det_limit_side_len': 960, 
++        'det_limit_side_len': 3200, 
+         'det_limit_type': 'max', 
+         'det_box_type': 'quad', 
+-        'det_db_thresh': 0.3, 
+-        'det_db_box_thresh': 0.6, 
+-        'det_db_unclip_ratio': 1.5, 
++        'det_db_thresh': 0.2, 
++        'det_db_box_thresh': 0.2, 
++        'det_db_unclip_ratio': 2.5, 
+         'max_batch_size': 10, 
+         'use_dilation': False, 
+         'det_db_score_mode': 'fast', 
+@@ -31,8 +31,8 @@
+         'rec_batch_num': 6, 
+         'max_text_length': 25, 
+         'vis_font_path': os.path.join(get_my_dir(),"doc/fonts/simfang.ttf"), 
+-        'drop_score': 0.5, 
+-        'use_angle_cls': False, 
++        'drop_score': 0.2, 
++        'use_angle_cls': True, 
+         'cls_model_dir': None, 
+         'cls_image_shape': '3, 48, 192', 
+         'label_list': ['0', '180'], 

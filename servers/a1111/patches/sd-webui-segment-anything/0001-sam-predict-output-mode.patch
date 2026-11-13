@@ -1,0 +1,51 @@
+Adds two optional request fields to POST /sam/sam-predict of sd-webui-segment-anything.
+
+output_mode: "all" (default, unchanged upstream response), "masks" (the 3 masks only) or
+"mask_top1" (only the mask at mask_index, as {"masks": [mask]}; {} when nothing is segmented).
+mask_index: 0-2 (default 0).
+
+The ImageBlur and SegmentOCR clients send output_mode="mask_top1", mask_index=0. With upstream
+code the fields are ignored and the server returns all 9 images; the clients would still use
+masks[0], but the responses would be much larger than in the measured runs.
+Base: continue-revolution/sd-webui-segment-anything @ 982138cfb505de61a3cbb257b2fa9d461d9b5493
+
+--- a/scripts/api.py
++++ b/scripts/api.py
+@@ -58,6 +58,11 @@
+         dino_box_threshold: Optional[float] = 0.3
+         dino_preview_checkbox: bool = False
+         dino_preview_boxes_selection: Optional[List[int]] = None
++        # Which images to return. "all" (default) is the upstream response: msg, blended_images,
++        # masks and masked_images (3 each). "masks" returns only the 3 masks. "mask_top1" returns
++        # only the mask at mask_index (0-2), as {"masks": [mask]}, or {} when nothing is segmented.
++        output_mode: str = "all"
++        mask_index: int = 0
+ 
+     @app.post("/sam/sam-predict")
+     async def api_sam_predict(payload: SamPredictRequest = Body(...)) -> Any:
+@@ -75,13 +80,19 @@
+             payload.dino_preview_checkbox,
+             payload.dino_preview_boxes_selection)
+         print(f"SAM API /sam/sam-predict finished with message: {sam_message}")
+-        result = {
+-            "msg": sam_message,
+-        }
++        result = {"msg": sam_message} if payload.output_mode == "all" else {}
+         if len(sam_output_mask_gallery) == 9:
+-            result["blended_images"] = list(map(encode_to_base64, sam_output_mask_gallery[:3]))
+-            result["masks"] = list(map(encode_to_base64, sam_output_mask_gallery[3:6]))
+-            result["masked_images"] = list(map(encode_to_base64, sam_output_mask_gallery[6:]))
++            if payload.output_mode == "all":
++                result["blended_images"] = list(map(encode_to_base64, sam_output_mask_gallery[:3]))
++                result["masks"] = list(map(encode_to_base64, sam_output_mask_gallery[3:6]))
++                result["masked_images"] = list(map(encode_to_base64, sam_output_mask_gallery[6:]))
++            elif payload.output_mode == "masks":
++                result["masks"] = list(map(encode_to_base64, sam_output_mask_gallery[3:6]))
++            elif payload.output_mode == "mask_top1":
++                idx = payload.mask_index if payload.mask_index is not None else 0
++                if idx < 0 or idx > 2:
++                    idx = 0
++                result["masks"] = [encode_to_base64(sam_output_mask_gallery[3 + idx])]
+         return result
+ 
+     class DINOPredictRequest(BaseModel):

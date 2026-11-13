@@ -1,0 +1,147 @@
+{
+ "workload": "segment_ocr",
+ "name": "SegmentOCR",
+ "source": "Derived from license-plate recognition; built on AUTOMATIC1111 WebUI v1.10.1, sd-webui-segment-anything, sd-webui-ocr (PP-OCRv4) and ESRGAN",
+ "workflow": "ESRGAN upscale, SAM car check, plate segmentation, client-side crop, PP-OCRv4 OCR of a license plate.",
+ "upstream_code": [
+  {
+   "name": "AUTOMATIC1111 stable-diffusion-webui",
+   "repo": "https://github.com/AUTOMATIC1111/stable-diffusion-webui",
+   "commit": "82a973c04367123ae98bd9abdf80d9eda9b910e2",
+   "tag": "v1.10.1",
+   "license": "AGPL-3.0",
+   "modified": false,
+   "role": "API server (/sdapi/v1/*) and extension host"
+  },
+  {
+   "name": "sd-webui-segment-anything",
+   "repo": "https://github.com/continue-revolution/sd-webui-segment-anything",
+   "commit": "982138cfb505de61a3cbb257b2fa9d461d9b5493",
+   "license": "none stated (no license file in the repository)",
+   "modified": true,
+   "role": "/sam/sam-predict (GroundingDINO + SAM)"
+  },
+  {
+   "name": "sd-webui-ocr",
+   "repo": "https://github.com/SpenserCai/sd-webui-ocr",
+   "commit": "5c75383ce6f0389e7d3521c5481f5bdddea8e167",
+   "license": "none stated (no license file in the repository)",
+   "modified": true,
+   "role": "/ocr/predict (PP-OCRv4 detection + recognition, ONNX)"
+  }
+ ],
+ "server": "servers/a1111",
+ "server_patches": [
+  {
+   "path": "servers/a1111/patches/sd-webui-segment-anything/0001-sam-predict-output-mode.patch",
+   "what": "optional output_mode/mask_index fields on /sam/sam-predict (default: upstream response)"
+  },
+  {
+   "path": "servers/a1111/patches/sd-webui-segment-anything/0002-dino-unload-after-call.patch",
+   "what": "adds the DINO_UNLOAD_AFTER_CALL server option"
+  },
+  {
+   "path": "servers/a1111/patches/sd-webui-ocr/0001-ocr-detection-parameters.patch",
+   "what": "text detection/recognition thresholds as deployed"
+  }
+ ],
+ "server_configuration": {
+  "env": {
+   "DINO_UNLOAD_AFTER_CALL": "1"
+  },
+  "config.json": {
+   "sam_use_local_groundingdino": true
+  },
+  "port_in_development": 7861,
+  "launch_flags": "--skip-prepare-environment --nowebui --api --server-name 127.0.0.1 --port 7861"
+ },
+ "models": [
+  {
+   "name": "ESRGAN 4x (ESRGAN_4x)",
+   "file": "models/ESRGAN/ESRGAN_4x.pth",
+   "url": "https://github.com/cszn/KAIR/releases/download/v1.0/ESRGAN.pth",
+   "sha256": "65fece06e1ccb48853242aa972bdf00ad07a7dd8938d2dcbdf4221b59f6372ce",
+   "bytes": 66929193,
+   "license": "not stated for the file; release asset of cszn/KAIR (MIT); ESRGAN project xinntao/ESRGAN (Apache-2.0)"
+  },
+  {
+   "name": "SAM ViT-H (sam_vit_h_4b8939)",
+   "file": "extensions/sd-webui-segment-anything/models/sam/sam_vit_h_4b8939.pth",
+   "url": "https://dl.fbaipublicfiles.com/segment_anything/sam_vit_h_4b8939.pth",
+   "sha256": "a7bf3b02f3ebf1267aba913ff637d9a2d5c33d3173bb679e46d9f338c26f262e",
+   "bytes": 2564550879,
+   "license": "Apache-2.0"
+  },
+  {
+   "name": "GroundingDINO SwinT-OGC",
+   "file": "extensions/sd-webui-segment-anything/models/grounding-dino/groundingdino_swint_ogc.pth",
+   "url": "https://huggingface.co/ShilongLiu/GroundingDINO/resolve/a94c9b567a2a374598f05c584e96798a170c56fb/groundingdino_swint_ogc.pth",
+   "sha256": "3b3ca2563c77c69f651d7bd133e97139c186df06231157a64c507099c52bc799",
+   "bytes": 693997677,
+   "license": "Apache-2.0",
+   "note": "run with the extension's bundled implementation (config.json sam_use_local_groundingdino=true); text encoder bert-base-uncased from the Hugging Face hub"
+  },
+  {
+   "name": "PP-OCRv4 server text detection (ONNX)",
+   "file": "models/ocr/ch_PP-OCRv4_server_det.onnx",
+   "url": "https://huggingface.co/spensercai/ppocr_v4_torch/resolve/5ac86e1097904916ff9af76a6ed9fdf6fa3420ee/ch_PP-OCRv4_server_det.onnx",
+   "sha256": "1fc804d5eb8021509160f7c580759ca58f5737e1b3e32260813fb057a1607e71",
+   "bytes": 113189862,
+   "license": "Apache-2.0"
+  },
+  {
+   "name": "PP-OCRv4 server text recognition (ONNX)",
+   "file": "models/ocr/ch_PP-OCRv4_server_rec.onnx",
+   "url": "https://huggingface.co/spensercai/ppocr_v4_torch/resolve/5ac86e1097904916ff9af76a6ed9fdf6fa3420ee/ch_PP-OCRv4_server_rec.onnx",
+   "sha256": "ce322ce7f5f1296b02d84b9414a2f014f54eca05d7560e27ecfc4cf3d8be085b",
+   "bytes": 90377463,
+   "license": "Apache-2.0"
+  }
+ ],
+ "datasets": [
+  {
+   "name": "OpenALPR benchmarks, endtoend/us",
+   "repo": "https://github.com/openalpr/benchmarks",
+   "commit": "9790ed20d475be1e940a7e2a3f492a97c2ebed9b",
+   "license": "AGPL-3.0 (repository license; no separate image license stated)",
+   "derivation": "PIL.ImageFilter.GaussianBlur(radius=1.0) on the RGB image, saved as PNG with Pillow 12.1.0",
+   "selection": "manifests/segment_ocr/SELECTION.md",
+   "seed": 20261034,
+   "splits": {
+    "profiling": 10,
+    "test": 20,
+    "test2": 20
+   }
+  }
+ ],
+ "parameters": {
+  "upscaler_1": "ESRGAN_4x",
+  "resize_mode": 0,
+  "upscaling_resize": 2.0,
+  "car_prompt": "car",
+  "car_box_threshold": 0.3,
+  "plate_prompts": [
+   "license plate",
+   "plate (retry if the first returns no mask)"
+  ],
+  "plate_box_threshold": 0.25,
+  "crop_pad_px": 8,
+  "output_mode": "mask_top1",
+  "mask_index": 0
+ },
+ "adaptations": [
+  "inputs are OpenALPR photos with a Gaussian blur applied locally (the prototype used one blurred photo of unknown origin)",
+  "input taken from a manifest row instead of a fixed file path",
+  "request-ID headers and client-side request logging removed; request bodies unchanged",
+  "server instance started with DINO_UNLOAD_AFTER_CALL=1 (port 7861)",
+  "server patch 0001 adds the output_mode/mask_index fields this client sends; sd-webui-ocr patch sets the detection thresholds as deployed"
+ ],
+ "client_requirements": "workloads/segment_ocr/requirements.txt",
+ "development_hardware": {
+  "server_gpu": "NVIDIA A40 (46068 MiB visible), driver 595.71.05, torch 2.1.2+cu121",
+  "server_cpu": "AMD EPYC 7763",
+  "server_os": "RHEL 9.6",
+  "server_python": "3.10.22",
+  "client": "macOS laptop, Python 3.10.18, on a separate network over an SSH tunnel"
+ }
+}

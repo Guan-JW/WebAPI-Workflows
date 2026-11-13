@@ -1,0 +1,123 @@
+{
+ "workload": "head_fashion",
+ "name": "HeadFashion",
+ "source": "Derived from image editing (headwear and hairstyle preview); built on AUTOMATIC1111 WebUI v1.10.1, sd-webui-segment-anything and Stable Diffusion v1.5",
+ "workflow": "Two dependent text-guided local edits (GroundingDINO+SAM segmentation, SD v1.5 inpainting) on one photo.",
+ "upstream_code": [
+  {
+   "name": "AUTOMATIC1111 stable-diffusion-webui",
+   "repo": "https://github.com/AUTOMATIC1111/stable-diffusion-webui",
+   "commit": "82a973c04367123ae98bd9abdf80d9eda9b910e2",
+   "tag": "v1.10.1",
+   "license": "AGPL-3.0",
+   "modified": false,
+   "role": "API server (/sdapi/v1/*) and extension host"
+  },
+  {
+   "name": "sd-webui-segment-anything",
+   "repo": "https://github.com/continue-revolution/sd-webui-segment-anything",
+   "commit": "982138cfb505de61a3cbb257b2fa9d461d9b5493",
+   "license": "none stated (no license file in the repository)",
+   "modified": true,
+   "role": "/sam/sam-predict (GroundingDINO + SAM)"
+  }
+ ],
+ "server": "servers/a1111",
+ "server_patches": [
+  {
+   "path": "servers/a1111/patches/sd-webui-segment-anything/0002-dino-unload-after-call.patch",
+   "what": "adds the DINO_UNLOAD_AFTER_CALL server option"
+  }
+ ],
+ "server_configuration": {
+  "env": {
+   "DINO_UNLOAD_AFTER_CALL": "1"
+  },
+  "config.json": {
+   "sam_use_local_groundingdino": true
+  },
+  "port_in_development": 7861,
+  "launch_flags": "--skip-prepare-environment --nowebui --api --server-name 127.0.0.1 --port 7861"
+ },
+ "models": [
+  {
+   "name": "Stable Diffusion v1.5, v1-5-pruned-emaonly",
+   "file": "models/Stable-diffusion/v1-5-pruned-emaonly.safetensors",
+   "url": "https://huggingface.co/stable-diffusion-v1-5/stable-diffusion-v1-5/resolve/451f4fe16113bff5a5d2269ed5ad43b0592e9a14/v1-5-pruned-emaonly.safetensors",
+   "sha256": "6ce0161689b3853acaa03779ec93eafe75a02f4ced659bee03f50797806fa2fa",
+   "bytes": 4265146304,
+   "license": "CreativeML OpenRAIL-M"
+  },
+  {
+   "name": "SAM ViT-H (sam_vit_h_4b8939)",
+   "file": "extensions/sd-webui-segment-anything/models/sam/sam_vit_h_4b8939.pth",
+   "url": "https://dl.fbaipublicfiles.com/segment_anything/sam_vit_h_4b8939.pth",
+   "sha256": "a7bf3b02f3ebf1267aba913ff637d9a2d5c33d3173bb679e46d9f338c26f262e",
+   "bytes": 2564550879,
+   "license": "Apache-2.0"
+  },
+  {
+   "name": "GroundingDINO SwinT-OGC",
+   "file": "extensions/sd-webui-segment-anything/models/grounding-dino/groundingdino_swint_ogc.pth",
+   "url": "https://huggingface.co/ShilongLiu/GroundingDINO/resolve/a94c9b567a2a374598f05c584e96798a170c56fb/groundingdino_swint_ogc.pth",
+   "sha256": "3b3ca2563c77c69f651d7bd133e97139c186df06231157a64c507099c52bc799",
+   "bytes": 693997677,
+   "license": "Apache-2.0",
+   "note": "run with the extension's bundled implementation (config.json sam_use_local_groundingdino=true); text encoder bert-base-uncased from the Hugging Face hub"
+  }
+ ],
+ "datasets": [
+  {
+   "name": "Open Images V7 (validation and test subsets; V5 boxes)",
+   "url": "https://storage.googleapis.com/openimages/web/index.html",
+   "images": "https://open-images-dataset.s3.amazonaws.com/<subset>/<ImageID>.jpg",
+   "license": "annotations CC BY 4.0 (Google LLC); images CC BY 2.0 as listed by Open Images",
+   "selection": "manifests/head_fashion/SELECTION.md",
+   "seed": 20261033,
+   "splits": {
+    "profiling": 9,
+    "test": 20,
+    "test2": 20
+   }
+  }
+ ],
+ "parameters": {
+  "dino_text_prompts": [
+   "hat",
+   "hair"
+  ],
+  "dino_box_threshold": 0.3,
+  "dino_model_name": "GroundingDINO_SwinT_OGC (694MB)",
+  "inpaint_prompts": [
+   "light, summery style, straw sunhat with a yellow ribbon",
+   "loose, light, summery hairstyle"
+  ],
+  "img2img": {
+   "steps": 30,
+   "cfg_scale": 7,
+   "denoising_strength": 0.75,
+   "width": 512,
+   "height": 512,
+   "inpainting_fill": 1,
+   "inpaint_full_res": true,
+   "inpaint_full_res_padding": 32,
+   "mask_blur": 4,
+   "seed": 1234
+  },
+  "mask_index": 0
+ },
+ "adaptations": [
+  "img2img seed fixed to 1234 (as in every measured run); the standalone prototype defaulted to -1 (random)",
+  "input photo taken from a manifest row instead of a fixed file path",
+  "request-ID headers and client-side request logging removed; request bodies unchanged",
+  "server instance started with DINO_UNLOAD_AFTER_CALL=1 (port 7861)"
+ ],
+ "client_requirements": "workloads/head_fashion/requirements.txt",
+ "development_hardware": {
+  "server_gpu": "NVIDIA A40 (46068 MiB visible), driver 595.71.05, torch 2.1.2+cu121",
+  "server_cpu": "AMD EPYC 7763",
+  "server_os": "RHEL 9.6",
+  "server_python": "3.10.22",
+  "client": "macOS laptop, Python 3.10.18, on a separate network over an SSH tunnel"
+ }
+}

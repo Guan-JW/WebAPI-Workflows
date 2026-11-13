@@ -1,0 +1,14 @@
+# downloaded inputs and run outputs
+data/
+runs/
+# upstream code fetched at pinned commits
+upstream/
+servers/*/upstream/
+workloads/*/upstream/
+# environments and caches
+.venv*/
+__pycache__/
+*.pyc
+.pytest_cache/
+.env
+.flashrank_cache/

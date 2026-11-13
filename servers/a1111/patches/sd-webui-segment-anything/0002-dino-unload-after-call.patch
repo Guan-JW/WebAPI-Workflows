@@ -1,0 +1,28 @@
+Adds the server option DINO_UNLOAD_AFTER_CALL to sd-webui-segment-anything.
+
+Base: continue-revolution/sd-webui-segment-anything @ 982138cfb505de61a3cbb257b2fa9d461d9b5493
+
+--- a/scripts/dino.py
++++ b/scripts/dino.py
+@@ -106,7 +106,10 @@
+         if shared.cmd_opts.lowvram:
+             dino.to(device=devices.device)
+     else:
+-        clear_dino_cache()
++        # With DINO_UNLOAD_AFTER_CALL=1 the cache is already empty at this point,
++        # so this step is skipped.
++        if os.environ.get("DINO_UNLOAD_AFTER_CALL") != "1":
++            clear_dino_cache()
+         if dino_install_success:
+             from groundingdino.models import build_model
+             from groundingdino.util.slconfig import SLConfig
+@@ -184,4 +187,9 @@
+         boxes_filt[i][2:] += boxes_filt[i][:2]
+     gc.collect()
+     devices.torch_gc()
++    # Server option DINO_UNLOAD_AFTER_CALL=1: clear the GroundingDINO cache after each call.
++    # Off unless the variable is set.
++    if os.environ.get("DINO_UNLOAD_AFTER_CALL") == "1":
++        clear_dino_cache()
++        print("GroundingDINO released (DINO_UNLOAD_AFTER_CALL=1)")
+     return boxes_filt, install_success

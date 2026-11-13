@@ -1,0 +1,5 @@
+# Client side (Python 3.10). Versions of the development client environment.
+# The photo is sent as its raw file bytes; Pillow only saves the intermediate images (and check.py uses it).
+requests==2.32.5
+Pillow==12.1.0
+numpy==2.2.6

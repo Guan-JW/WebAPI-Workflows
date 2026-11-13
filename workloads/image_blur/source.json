@@ -1,0 +1,121 @@
+{
+ "workload": "image_blur",
+ "name": "ImageBlur",
+ "source": "Derived from privacy-preserving photo sharing; built on AUTOMATIC1111 WebUI v1.10.1, sd-webui-segment-anything and the sd-webui-blur extension in this suite",
+ "workflow": "Detect faces and cars (GroundingDINO+SAM), blur, composite, before a photo is shared. The client and sd-webui-blur are part of this suite.",
+ "upstream_code": [
+  {
+   "name": "AUTOMATIC1111 stable-diffusion-webui",
+   "repo": "https://github.com/AUTOMATIC1111/stable-diffusion-webui",
+   "commit": "82a973c04367123ae98bd9abdf80d9eda9b910e2",
+   "tag": "v1.10.1",
+   "license": "AGPL-3.0",
+   "modified": false,
+   "role": "API server (/sdapi/v1/*) and extension host"
+  },
+  {
+   "name": "sd-webui-segment-anything",
+   "repo": "https://github.com/continue-revolution/sd-webui-segment-anything",
+   "commit": "982138cfb505de61a3cbb257b2fa9d461d9b5493",
+   "license": "none stated (no license file in the repository)",
+   "modified": true,
+   "role": "/sam/sam-predict (GroundingDINO + SAM)"
+  },
+  {
+   "name": "sd-webui-blur",
+   "repo": null,
+   "commit": null,
+   "path": "servers/a1111/extensions/sd-webui-blur",
+   "license": "Apache-2.0",
+   "modified": false,
+   "role": "/blur/generate and /compose; part of this suite"
+  }
+ ],
+ "server": "servers/a1111",
+ "server_patches": [
+  {
+   "path": "servers/a1111/patches/sd-webui-segment-anything/0001-sam-predict-output-mode.patch",
+   "what": "optional output_mode/mask_index fields on /sam/sam-predict (default: upstream response)"
+  },
+  {
+   "path": "servers/a1111/patches/sd-webui-segment-anything/0002-dino-unload-after-call.patch",
+   "what": "adds the DINO_UNLOAD_AFTER_CALL server option"
+  }
+ ],
+ "server_configuration": {
+  "env": {
+   "DINO_UNLOAD_AFTER_CALL": "1"
+  },
+  "config.json": {
+   "sam_use_local_groundingdino": true
+  },
+  "port_in_development": 7861,
+  "launch_flags": "--skip-prepare-environment --nowebui --api --server-name 127.0.0.1 --port 7861"
+ },
+ "models": [
+  {
+   "name": "SAM ViT-H (sam_vit_h_4b8939)",
+   "file": "extensions/sd-webui-segment-anything/models/sam/sam_vit_h_4b8939.pth",
+   "url": "https://dl.fbaipublicfiles.com/segment_anything/sam_vit_h_4b8939.pth",
+   "sha256": "a7bf3b02f3ebf1267aba913ff637d9a2d5c33d3173bb679e46d9f338c26f262e",
+   "bytes": 2564550879,
+   "license": "Apache-2.0"
+  },
+  {
+   "name": "GroundingDINO SwinT-OGC",
+   "file": "extensions/sd-webui-segment-anything/models/grounding-dino/groundingdino_swint_ogc.pth",
+   "url": "https://huggingface.co/ShilongLiu/GroundingDINO/resolve/a94c9b567a2a374598f05c584e96798a170c56fb/groundingdino_swint_ogc.pth",
+   "sha256": "3b3ca2563c77c69f651d7bd133e97139c186df06231157a64c507099c52bc799",
+   "bytes": 693997677,
+   "license": "Apache-2.0",
+   "note": "run with the extension's bundled implementation (config.json sam_use_local_groundingdino=true); text encoder bert-base-uncased from the Hugging Face hub"
+  }
+ ],
+ "datasets": [
+  {
+   "name": "COCO 2017 val",
+   "url": "https://cocodataset.org",
+   "images": "http://images.cocodataset.org/val2017/",
+   "annotations": {
+    "url": "http://images.cocodataset.org/annotations/annotations_trainval2017.zip",
+    "sha256": "113a836d90195ee1f884e704da6304dfaaecff1f023f49b6ca93c4aaae470268"
+   },
+   "license": "annotations CC BY 4.0 (COCO Consortium); images: per-image Flickr CC licenses (recorded per row) and the Flickr Terms of Use",
+   "selection": "manifests/image_blur/SELECTION.md",
+   "seed": 20261032,
+   "rule": "non-crowd person and car present; largest person box >= 2% of the image",
+   "splits": {
+    "profiling": 10,
+    "test": 20,
+    "test2": 20
+   }
+  }
+ ],
+ "parameters": {
+  "dino_text_prompts": [
+   "human face",
+   "car"
+  ],
+  "dino_box_threshold": 0.3,
+  "sam_model_name": "sam_vit_h_4b8939.pth",
+  "output_mode": "mask_top1",
+  "mask_index": 0,
+  "blur_ksize": 41,
+  "output_format": "PNG"
+ },
+ "adaptations": [
+  "the optional user confirmation before blurring (command-line flag of the prototype) is not part of the benchmark",
+  "input photo taken from a manifest row instead of a fixed file path",
+  "request-ID headers and client-side request logging removed; request bodies unchanged",
+  "server instance started with DINO_UNLOAD_AFTER_CALL=1 (port 7861)",
+  "server patch 0001 adds the output_mode/mask_index fields this client sends"
+ ],
+ "client_requirements": "workloads/image_blur/requirements.txt",
+ "development_hardware": {
+  "server_gpu": "NVIDIA A40 (46068 MiB visible), driver 595.71.05, torch 2.1.2+cu121",
+  "server_cpu": "AMD EPYC 7763",
+  "server_os": "RHEL 9.6",
+  "server_python": "3.10.22",
+  "client": "macOS laptop, Python 3.10.18, on a separate network over an SSH tunnel"
+ }
+}

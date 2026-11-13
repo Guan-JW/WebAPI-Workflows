@@ -1,0 +1,4 @@
+# Client side of the question-answering workload (Python 3.10); the version used by the reference client.
+httpx==0.28.1
+# prepare_data.py only (reads the MS MARCO parquet):
+pyarrow==17.0.0
